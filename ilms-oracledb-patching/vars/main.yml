@@ -1,0 +1,99 @@
+# OracleDB Vars:
+#infra vars
+oracle_user: oracle
+oracle_install_group: oinstall
+extra_groups:
+  - dba
+  - oper
+
+root_directory: "/u01"
+stage_dir: "/u01/stage"
+scripts_directory: "{{ root_directory }}/app/scripts"
+root_user: root
+
+
+oracle_base: /u01/app/oracle
+inventory_os_group: '{{ oracle_install_group }}'
+oracle_home: /u01/app/oracle/product/12.2.0/dbhome_1
+oracle_inventory: /u01/app/oraInventory
+inventory_location: '{{ oracle_inventory }}'
+install_db: INSTALL_DB_SWONLY
+oracle_hostname: '{{ server_hostname }}'
+server_hostname: '{{ ansible_fqdn }}'
+
+
+
+installer_archives: "http://10.39.3.11/domain_name/dev/linuxx64_12201_database.zip"
+db_pkg: "linuxx64_12201_database.zip"
+patch_archives: "http://10.39.3.11/domain_name/dev/p30593149_122010_Linux-x86-64.zip"
+patch_pkg: "p30593149_122010_Linux-x86-64.zip"
+opatch_archives: "http://10.39.3.11/domain_name/dev/p6880880_121010_Linux-x86-64.zip"
+opatch_pkg: "p6880880_121010_Linux-x86-64.zip"
+extra_path: "/u01/app/oracle/product/12.2.0/dbhome_1/OPatch/"
+
+
+oracle_install_version: "12201"
+dbhome_name: "dbhome_1"
+oracle_edition: "EE"
+oracle_dba_group: dba
+oracle_oper_group: oper
+oracle_database_type: "GENERAL_PURPOSE"
+oracle_globalname: "orcl.oradb.private"
+oracle_sid: "orcl"
+create_container_database: "true"
+number_of_pdbs: "1"
+oracle_conf_as_container_db: "true"
+pdb_prefix: "db"
+oracle_pdb_name: "db01"
+oracle_charset: "AL32UTF8"
+oracle_memory_option: "false"
+# memory target
+oracle_memory_mb: 1536
+oracle_install_samples: "true"
+oracle_pass_all_users: "password"
+oracle_management_option: "DEFAULT"
+oracle_enable_recovery: "true"
+oracle_storage_type: "FILE_SYSTEM_STORAGE"
+oracle_dataloc: "{{ oracle_base }}/oradata"
+oracle_recoveryloc: "{{ oracle_base }}/recovery_area"
+oracle_decline_security_updates: "True"
+hugepages_nr: 578
+
+
+
+# Linux Config Vars:
+#Oracle user limits
+soft_no_file: 4096
+hard_no_file: 65536
+soft_nproc: 2047
+hard_nproc: 16384
+soft_stack: 10240
+hard_stack: 32768
+# mem lock 90% of RAM
+soft_memlock: 1887437
+hard_memlock: 1887437
+
+packages_list:
+  - compat-libcap1
+  - gcc
+  - gcc-c++
+  - glibc
+  - glibc.i686
+  - glibc-devel
+  - glibc-devel.i686
+  - ksh
+  - libaio.i686
+  - libaio-devel
+  - libaio-devel.i686
+  #- libgcc.i686
+  - libstdc++.i686
+  - libstdc++-devel
+  - libstdc++-devel.i686
+  - libXi
+  - libXi.i686
+  - libXrender
+  - libXtst
+  - libXtst.i686
+  - sysstat
+  - unixODBC
+  - unzip

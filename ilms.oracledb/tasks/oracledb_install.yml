@@ -1,0 +1,153 @@
+#- name: create required directories
+#  become: yes
+#  file:
+#    path: "{{ item }}"
+#    state: directory
+#    owner: "{{ oracle_user }}"
+#    group: "{{ oracle_install_group }}"
+#    mode: '0775'
+#  with_items:
+#    - "{{ root_directory }}"
+#    - "{{ scripts_directory }}"
+#    - "{{ oracle_inventory }}"
+#    - "{{ oracle_base }}"
+#    - "{{ stage_dir }}"
+#    - "{{ oracle_home }}"
+#  tags:
+#   - db12c_createinventory
+
+#- name: Download installer files
+#  become: yes
+#  get_url:         
+#    url: '{{ installer_archives }}'
+#    dest: '{{ stage_dir }}'
+#    mode: '0755'
+#  tags:
+#   - db12c_downloaddbsoftware
+
+- name: Unarchive the oracle database files
+  unarchive:
+    src: '{{ stage_dir }}/{{ db_pkg }}'
+    dest: "{{ oracle_home }}"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_install_group }}"
+    mode: '0755'
+    remote_src: yes
+  tags:
+   - db12c_unpackdbsoftware
+
+#- name: Remove installer zip 
+#  become: yes
+#  file: 
+#    path: '{{ stage_dir }}/{{ db_pkg }}'
+#    state: absent
+
+- name: Generate the response file for software only installation
+  become: yes
+  become_user: "{{ oracle_user }}" 
+  template: 
+    src: "db_install.rsp.j2" 
+    dest: "{{ stage_dir }}/db_install.rsp"
+    mode: '0755'
+  tags:
+   - db12c_setuprspfile
+    
+- name: Install Product
+  become: yes
+  become_user: "{{ oracle_user }}"
+  command: "{{ oracle_home }}/database/runInstaller -silent -ignorePrereq -ignoreSysPrereqs -waitforcompletion -responseFile {{ stage_dir }}/db_install.rsp"
+  #ignore_errors: True
+  tags:
+   - dbsoft12c_install
+
+- name: Execute Inventory root command
+  become: yes
+  command: '{{ oracle_inventory }}/orainstRoot.sh'
+  ignore_errors: True
+  tags:
+    - db12c_exeorainstroot
+
+- name: Execute DB home root command
+  become: yes
+  command: '{{ oracle_home }}/root.sh -silent'
+  tags:
+    - db12c_exeroot
+
+
+# ==> TODO: Create a new role for creating the database
+# ==> Create Listener TODO: Parameterize port, name etc
+#- name: Copy the netca file for software only installation
+#  become: yes
+#  template: 
+#    src: "netca.rsp.j2" 
+#    dest: "{{ stage_dir }}/netca.rsp"
+#    mode: '0755'
+#  tags:
+#   - db12c_setupnetcafile
+
+#- name: Copy response file for dbca
+#  become: yes
+#  template: 
+#    src: "dbca.rsp.j2" 
+#    dest: "{{ stage_dir }}/dbca.rsp"
+#    mode: '0755'
+#  tags:
+#   - db12c_setupdbcafile
+
+#- name: Copy init.d oracle script to /etc/init.d
+#  become: yes
+#  template: 
+#    src: "oradb.j2" 
+#    dest: "{{ stage_dir }}/oradb"
+#    mode: "0755"
+#  tags:
+#   - db12c_setuporadbfile
+
+#- name: Create listener using netca
+#  become: yes
+#  become_user: "{{ oracle_user }}"
+#  command: '{{ oracle_home }}/bin/netca -silent -responseFile {{ stage_dir }}/netca.rsp'
+
+#- name: create database
+#  command: '{{ oracle_home }}/bin/dbca -silent -responseFile {{ stage_dir }}/dbca.rsp'
+
+#- name: create oracle home variable
+#  lineinfile: dest='/home/{{ oracle_user }}/.bashrc' line='export ORACLE_HOME={{ oracle_home }}'
+
+#- name: create oracle sid variable
+#  lineinfile: dest='/home/{{ oracle_user }}/.bashrc' line='export ORACLE_SID={{ oracle_sid }}'
+
+#- name: add oracle home bin folder
+#  lineinfile: dest='/home/{{ oracle_user }}/.bashrc' line='export PATH=$PATH:$ORACLE_HOME/bin'
+
+#- name: change oratab
+#  lineinfile: dest='/etc/oratab' regexp='^{{ oracle_sid }}:{{ oracle_home }}:N' line='{{ oracle_sid }}:{{ oracle_home }}:Y'
+#  become_user: root
+
+#- name: enable oradb script to run at startup
+#  command: 'chkconfig --add oradb'
+#  become_user: root
+
+# You can remove it for non vagrant server.
+#- name: reboot vagrant virtual machine
+#  local_action: shell vagrant reload
+#  sudo_user: '{{ host_username }}'
+#  ignore_errors: yes
+#  tags:
+#    - reboot-vagrant
+
+#- name: Create trigger for autostart pluggable db's
+#  copy: src=start-pluggable-dbs.sh dest={{ stage_dir }}/ mode=755
+#  tags:
+#    - start-pluggable
+
+#- name: Start pluggable DB
+#  command: '{{ stage_dir }}/start-pluggable-dbs.sh'
+#  tags:
+#    - start-pluggable
+
+#- name: Remove stage directory 
+#  file: 
+#    path: '{{ stage_dir }}'
+#    state: absent
+

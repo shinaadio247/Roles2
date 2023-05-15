@@ -1,0 +1,19 @@
+---
+- name: Configure Oracle Linux 7 with Oracle Database 12c
+#  vars_files:
+  include_vars: dbinstall_vars.yml
+    # User Passwords
+    #- secrets.yml
+
+#  tasks:
+#- name: Include task list on linux preconfiguration
+#  import_tasks: linux_preconfig.yml
+
+  
+- name: Include task list on database installation
+  import_tasks: oracledb_install.yml
+
+
+#- name: Include task list on database software patching
+#  import_tasks: oraclepatch.yml
+

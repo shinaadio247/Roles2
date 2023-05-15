@@ -1,0 +1,96 @@
+- name: Download patch file
+  become: yes
+  get_url:         
+    url: '{{ patch_archives }}'
+    dest: '{{ stage_dir }}'
+    mode: '0755'
+  tags:
+   - db12c_downloaddbsoftware
+
+#Unzip oracleDB patch with the oracle unzip utility in {{oracle_home }}/bin/
+#Should use COMMAND instead of UNARCHIVE
+- name: Unarchive the oracle database patch file
+  become: yes
+  become_user: "{{ oracle_user }}"
+  shell: /u01/app/oracle/product/12.2.0/dbhome_1/bin/unzip p30593149_122010_Linux-x86-64.zip
+  args:
+    chdir: /u01/app/oracle/product/12.2.0/dbhome_1
+  tags:
+   - db12c_unpackdbsoftware
+
+#Download Opatch zip to {{oracle_home}} 
+- name: Download Opatch file
+  become: yes
+  get_url:         
+    url: '{{ opatch_archives }}'
+    dest: '{{ stage_dir }}'
+    mode: '0755'
+  tags:
+   - db12c_downloaddbsoftware
+
+#Move old opatch folder to new folder "Old_Opatches" to preserve it in case of error
+- name: Move old OPatch folder
+  become: yes
+  become_user: "{{ oracle_user }}"
+  shell: mv /u01/app/oracle/product/12.2.0/dbhome_1/Opatch /u01/app/oracle/product/12.2.0/dbhome_1/Old_Opatch
+  args:
+    chdir: /u01/app/oracle/product/12.2.0/dbhome_1
+
+#Create new OPatch folder by unzipping the downloaded Opatch file
+- name: Unarchive the oracle database Opatch file
+  become: yes
+  become_user: "{{ oracle_user }}"
+  unarchive:
+    src: '{{ stage_dir }}/{{ opatch_pkg }}'
+    dest: "{{ oracle_home }}"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_install_group }}"
+    mode: '0755'
+    remote_src: yes
+  tags:
+   - db12c_unpackdbsoftware
+
+#Set the PATH variable for OPATCH:
+#become oracle user first
+- name: set the PATH variable for OPatch
+  become: yes
+  become_user: "{{ oracle_user }}"
+  shell: export PATH=$PATH:/u01/app/oracle/product/12.2.0/dbhome_1/OPatch/
+  args:
+    chdir: /u01/app/oracle/product/12.2.0/dbhome_1
+
+#become oracle user
+#cd to patch folder 30593149 and enter command:
+#opatch prereq CheckConflictAgainstOHWithDetail -ph ./
+
+#become oracle user
+#rollback conflicting subsets with:
+#*for the oracle linux system it was 26272761*
+- name: rollback conflicting patch subset
+  become: yes
+  become_user: "{{ oracle_user }}"
+  shell: opatch rollback -id 26272761
+  args:
+    chdir: /u01/app/oracle/product/12.2.0/dbhome_1/30593149
+
+
+#start the patch with:
+#opatch napply
+- name: Install Patch
+  become: yes
+  become_user: "{{ oracle_user }}"
+  shell: opatch napply
+  args:
+    chdir: /u01/app/oracle/product/12.2.0/dbhome_1/30593149/ 
+    
+- name: Remove patch zip 
+  become: yes
+  file: 
+    path: '{{ stage_dir }}/{{ patch_pkg }}'
+    state: absent
+
+- name: Remove Opatch zip 
+  become: yes
+  file: 
+    path: '{{ stage_dir }}/{{ opatch_pkg }}'
+    state: absent
